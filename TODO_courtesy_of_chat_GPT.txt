@@ -1,0 +1,85 @@
+Step 1: Setting Up the C Backend
+
+Your backend will be responsible for handling HTTP requests, serving blog content, and interacting with PostgreSQL.
+
+What Needs to Happen?
+	1.	Handle Incoming HTTP Requests
+	•	Since C doesn’t provide a built-in HTTP server like Python or Node.js, you need to manually open a socket, listen for connections, and parse HTTP requests.
+	•	You’ll need to support different HTTP methods like GET (fetch blog posts) and POST (add new posts).
+	2.	Process the Requests Efficiently
+	•	Using fork() or threads can help handle multiple requests, but for high performance, consider using an event-driven model (like epoll or kqueue).
+	•	Parsing HTTP requests manually is tedious; using a lightweight library (like microhttpd or libev) can help.
+	3.	Serve Static Content (CSS, JS, Images)
+	•	You’ll need a mechanism to serve static files efficiently.
+	•	A common pattern is to let Nginx handle static files while your C server focuses on dynamic content.
+
+Step 2: Connecting to PostgreSQL
+
+Your blog content (titles, posts, timestamps) will be stored in PostgreSQL.
+
+What Needs to Happen?
+	1.	Establish a Connection
+	•	You need a persistent connection to the database instead of reconnecting every request.
+	•	Connection pooling (pgbouncer) is useful if you expect many concurrent users.
+	2.	Query the Database
+	•	You’ll need to issue SELECT, INSERT, and UPDATE queries.
+	•	Use prepared statements to avoid SQL injection and improve performance.
+	3.	Convert Query Results into Usable Data
+	•	The result from PostgreSQL will be in a structured format.
+	•	You need to parse it into a format that can be easily embedded in an HTML response.
+
+Step 3: Generating & Serving Blog Pages
+
+You need a way to generate and serve blog pages dynamically.
+
+What Needs to Happen?
+	1.	Template System
+	•	Hardcoding HTML inside C is messy.
+	•	Either pre-render HTML files (faster but less dynamic) or implement a basic templating system where placeholders in HTML files are replaced with real data.
+	2.	Efficient Content Loading
+	•	Instead of fetching blog posts from PostgreSQL on every request, cache them in memory or use Redis.
+	3.	Routing Mechanism
+	•	A basic routing system (/ for homepage, /post/:id for individual posts) is needed.
+	•	The server must extract route parameters from the URL and serve the correct content.
+
+Step 4: Deployment & Server Setup
+
+Once the backend is working locally, you need to deploy it properly.
+
+What Needs to Happen?
+	1.	Set Up a VPS
+	•	Choose a provider (DigitalOcean, Linode, etc.) and set up an Ubuntu or Alpine Linux server.
+	•	Secure it with SSH keys instead of passwords.
+	2.	Install & Configure PostgreSQL
+	•	Set up a dedicated PostgreSQL user and database for your blog.
+	•	Tune settings like shared_buffers and work_mem for better performance.
+	3.	Use Nginx as a Reverse Proxy
+	•	Instead of exposing your C server directly to the internet, use Nginx to handle incoming traffic and forward requests.
+	•	This allows you to serve static assets efficiently and handle HTTPS via Let’s Encrypt.
+
+Step 5: Performance Optimizations
+
+Your blog should be fast and scalable.
+
+What Needs to Happen?
+	1.	Minimize PostgreSQL Queries
+	•	Instead of querying on every request, cache results in memory.
+	•	Use Redis for frequently accessed content.
+	2.	Use an Efficient Event-Driven Model
+	•	Instead of spawning a new process per request (fork()), use an event loop with epoll (Linux) or kqueue (BSD/macOS) to handle multiple connections efficiently.
+	3.	Enable HTTP Keep-Alive
+	•	This reduces the overhead of establishing a new connection for every request.
+	4.	Use a CDN for Static Files
+	•	Store images, CSS, and JS on a CDN (Cloudflare, BunnyCDN) so your server only handles API/database requests.
+
+Where to Start?
+	1.	Get a simple HTTP server running in C.
+	•	Start by making a basic TCP server that listens on a port.
+	•	Read HTTP requests and print them to the console.
+	2.	Set up PostgreSQL and run simple queries from C.
+	•	Connect to PostgreSQL and run SELECT * FROM posts; from your C program.
+	3.	Integrate the database with the HTTP server.
+	•	Fetch a blog post from the database and return an HTML response.
+	4.	Optimize for performance.
+	•	Move towards an event-driven model.
+	•	Cache database results.
